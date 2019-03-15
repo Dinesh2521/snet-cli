@@ -148,7 +148,7 @@ def add_network_options(parser, config):
     p.set_defaults(fn="create")
     p.add_argument("network_name", help="name of network to create")
     p.add_argument("eth_rpc_endpoint", help="ethereum rpc endpoint")
-    p.add_argument("--default-gas-price", default=1000000000, type=int, help="default gas price for this network (in wei), default is 1000000000")
+    p.add_argument("--default-gas-price", default="medium", help="default gas price (in wei) or gas price strategy ('fast' ~1min, 'medium' ~5min or 'slow' ~60min), default is 'medium'")
     p.add_argument("--skip-check", action="store_true", help="skip check that eth_rpc_endpoint is valid")
 
 
@@ -331,8 +331,7 @@ def add_eth_call_arguments(parser):
 
 def add_transaction_arguments(parser):
     transaction_g = parser.add_argument_group(title="transaction arguments")
-    transaction_g.add_argument("--gas-price", type=int,
-                               help="ethereum gas price for transaction (defaults to session.default_gas_price)")
+    transaction_g.add_argument("--gas-price", help="ethereum gas price in Wei or time based gas price strategy ('fast' ~1min, 'medium' ~5min or 'slow' ~60min)  (defaults to session.default_gas_price)")
     transaction_g.add_argument("--wallet-index", type=int,
                                help="wallet index of account to use for signing (defaults to session.identity.default_wallet_index)")
     transaction_g.add_argument("--yes", "-y", action="store_true",
@@ -428,7 +427,7 @@ def add_p_group_name(p):
 def add_p_expiration(p, is_optional):
     h = "expiration time in blocks (<int>), or in blocks related to the current_block (+<int>blocks), or in days related to the current_block and assuming 15 sec/block (+<int>days)"
     if (is_optional):
-        p.add_argument("--expiration", required=True,  help=h)
+        p.add_argument("--expiration", help=h)
     else:
         p.add_argument("expiration",  help=h)
     p.add_argument("--force", action="store_true", help="Skip check for very high (>6 month) expiration time")
@@ -492,7 +491,7 @@ def add_mpe_channel_options(parser):
     def add_p_set_for_extend_add(p):
         expiration_amount_g = p.add_argument_group(title="Expiration and amount")
         add_p_expiration(expiration_amount_g, is_optional = True)
-        expiration_amount_g.add_argument("--amount",     type=stragi2cogs, required=True, help="Amount of AGI tokens to add to the channel")
+        expiration_amount_g.add_argument("--amount",     type=stragi2cogs, help="Amount of AGI tokens to add to the channel")
         add_p_mpe_address_opt(p)
         add_transaction_arguments(p)
 
@@ -501,7 +500,7 @@ def add_mpe_channel_options(parser):
     add_p_channel_id(p)
     add_p_set_for_extend_add(p)
 
-    p = subparsers.add_parser("extend-add-for-service", help="Set new expiration and add funds for the channel which was initialized for the given service")
+    p = subparsers.add_parser("extend-add-for-service", help="Set new expiration and add funds for the channel for the given service")
     p.set_defaults(fn="channel_extend_and_add_funds_for_service")
     add_p_service_in_registry(p)
     add_p_set_for_extend_add(p)
@@ -662,6 +661,18 @@ def add_mpe_service_options(parser):
     p.add_argument("--group-name", default=None, help="name of the payment group to which we want to add endpoints. Parameter should be specified in case of several payment groups")
     add_p_metadata_file_opt(p)
 
+    p = subparsers.add_parser("metadata-remove-all-endpoints", help="Remove all endpoints from metadata")
+    p.set_defaults(fn="metadata_remove_all_endpoints")
+    add_p_metadata_file_opt(p)
+
+
+    p = subparsers.add_parser("metadata-update-endpoints", help="Remove all endpoints from the group and add new ones")
+    p.set_defaults(fn="metadata_update_endpoints")
+    p.add_argument("endpoints", nargs="+",  help="endpoints")
+    p.add_argument("--group-name", default=None, help="name of the payment group to which we want to add endpoints. Parameter should be specified in case of several payment groups")
+    add_p_metadata_file_opt(p)
+
+
     p = subparsers.add_parser("metadata-add-description", help="Add service description")
     p.set_defaults(fn="metadata_add_description")
     p.add_argument("--json",        default=None,  help="Service description in json")
@@ -690,7 +701,6 @@ def add_mpe_service_options(parser):
     add_p_publish_params(p)
     add_p_service_in_registry(p)
     add_transaction_arguments(p)
-    p.add_argument("--force", action="store_true", help="Force update metadata")
 
     p = subparsers.add_parser("update-add-tags", help="Add tags to existed service registration")
     p.set_defaults(fn="update_registration_add_tags")
