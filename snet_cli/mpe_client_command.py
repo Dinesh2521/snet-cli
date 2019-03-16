@@ -199,7 +199,7 @@ class MPEClientCommand(MPEChannelCommand):
         if (server["current_nonce"] == blockchain["nonce"]):
             unspent_amount = blockchain["value"] - server["current_signed_amount"]
         else:
-            unspent_amount = None # in this case we cannot securely define unspent_amount yet
+            unspent_amount = blockchain["value"] - server["oldnonce_signed_amount"] - server["current_signed_amount"] 
 
         return (server["current_nonce"], server["current_signed_amount"], unspent_amount)
 
